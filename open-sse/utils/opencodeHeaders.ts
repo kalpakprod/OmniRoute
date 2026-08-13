@@ -47,7 +47,10 @@ function findHeader(headers: Record<string, string>, name: string): string | und
  *   the OpenCode CLI identity headers that Cloudflare requires on VPS egress
  *   (User-Agent, x-opencode-client, x-opencode-project) plus fresh request/session
  *   UUIDs, but ONLY for keys the client did not already supply. Client values always
- *   win; these defaults only fill gaps. (#5997)
+ *   win; these defaults only fill gaps. User-Agent is the one exception: a client UA
+ *   that is not already the OpenCode CLI (e.g. curl/8.5.0) is REPLACED with the
+ *   synthesized CLI UA, because opencode.ai's free tier rejects generic client UAs
+ *   from datacenter IPs with FreeUsageLimitError 429. (#5997, follow-up #10229)
  */
 export function forwardOpencodeClientHeaders(
   headers: Record<string, string>,
@@ -100,14 +103,22 @@ export function forwardOpencodeClientHeaders(
 }
 
 /**
- * Fill the OpenCode CLI identity headers Cloudflare requires on VPS egress, but only for
- * keys the client did not already supply (client values always win). (#5997)
+ * Fill the OpenCode CLI identity headers Cloudflare requires on VPS egress. For
+ * x-opencode-* headers, client values always win (defaults only fill gaps). The
+ * User-Agent is the exception: a non-CLI client UA (curl, python, SDKs) is replaced
+ * with the synthesized CLI UA, because opencode.ai's free tier flags generic client
+ * UAs from datacenter IPs (FreeUsageLimitError 429). A client UA that already looks
+ * like the OpenCode CLI (opencode-cli/...) is preserved so the real CLI's versioned
+ * identity stays intact. (#5997, follow-up)
  */
 function applyCliDefaults(
   headers: Record<string, string>,
   cliDefaults: { userAgent: string; client: string; project: string }
 ): void {
-  if (!headers["User-Agent"] && !headers["user-agent"]) {
+  const existingUa = headers["User-Agent"] || headers["user-agent"];
+  const clientUaIsCliLike =
+    typeof existingUa === "string" && /^opencode-cli\//i.test(existingUa.trim());
+  if (!clientUaIsCliLike) {
     setUserAgentHeader(headers, cliDefaults.userAgent);
   }
   headers["x-opencode-client"] ||= cliDefaults.client;

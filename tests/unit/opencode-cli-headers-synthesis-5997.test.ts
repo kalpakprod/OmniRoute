@@ -53,10 +53,10 @@ test("forwardOpencodeClientHeaders: cliDefaults synthesize all CLI identity head
   assert.notEqual(headers["x-opencode-request"], headers["x-opencode-session"]);
 });
 
-test("forwardOpencodeClientHeaders: client-supplied CLI headers take precedence over defaults [#5997]", () => {
+test("forwardOpencodeClientHeaders: non-CLI client UA is REPLACED with the CLI UA; other headers keep client-wins [#5997 follow-up]", () => {
   const headers: Record<string, string> = {};
   const clientHeaders = {
-    "User-Agent": "my-tool/9.9",
+    "User-Agent": "curl/8.5.0",
     "x-opencode-client": "vscode",
     "x-opencode-project": "acme",
     "x-opencode-request": "req-from-client",
@@ -64,11 +64,18 @@ test("forwardOpencodeClientHeaders: client-supplied CLI headers take precedence 
   };
   forwardOpencodeClientHeaders(headers, clientHeaders, { cliDefaults: CLI_DEFAULTS });
 
-  assert.equal(headers["User-Agent"], "my-tool/9.9");
+  assert.equal(headers["User-Agent"], "opencode-cli/1.0.0");
   assert.equal(headers["x-opencode-client"], "vscode");
   assert.equal(headers["x-opencode-project"], "acme");
   assert.equal(headers["x-opencode-request"], "req-from-client");
   assert.equal(headers["x-opencode-session"], "sess-from-client");
+});
+
+test("forwardOpencodeClientHeaders: an existing opencode-cli UA is preserved (real CLI version intact)", () => {
+  const headers: Record<string, string> = {};
+  const clientHeaders = { "User-Agent": "opencode-cli/2.5.0" };
+  forwardOpencodeClientHeaders(headers, clientHeaders, { cliDefaults: CLI_DEFAULTS });
+  assert.equal(headers["User-Agent"], "opencode-cli/2.5.0");
 });
 
 test("forwardOpencodeClientHeaders: without cliDefaults, no synthesis (DefaultExecutor path unchanged)", () => {

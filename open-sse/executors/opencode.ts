@@ -291,7 +291,9 @@ export class OpencodeExecutor extends BaseExecutor {
     // value risks upstream rejection (#5720 regressed with "opencode/local"), and this
     // is deployment-specific. So it stays OFF by default and the VPS operator enables it
     // with OPENCODE_SYNTHESIZE_CLI_HEADERS=true (values env-overridable). Client-supplied
-    // headers always take precedence.
+    // headers take precedence, EXCEPT User-Agent: a non-CLI client UA (curl/SDK) is
+    // replaced with the synthesized CLI UA because opencode.ai's free tier rejects
+    // generic client UAs from datacenter IPs (FreeUsageLimitError 429).
     const synthesizeCli = /^(1|true|yes|on)$/i.test(
       process.env.OPENCODE_SYNTHESIZE_CLI_HEADERS?.trim() ?? ""
     );
