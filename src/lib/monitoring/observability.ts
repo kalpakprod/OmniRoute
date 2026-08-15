@@ -231,6 +231,7 @@ export function buildHealthPayload({
   const timestamp = new Date().toISOString();
   const system = {
     version: appVersion,
+    buildSha: process.env.OMNIROUTE_BUILD_SHA ?? null,
     nodeVersion: process.version,
     uptime: process.uptime(),
     memoryUsage: process.memoryUsage(),

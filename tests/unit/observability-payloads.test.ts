@@ -151,6 +151,7 @@ test("buildHealthPayload keeps legacy aliases and adds session/quota observabili
   });
 
   assert.equal(payload.version, "1.2.3");
+  assert.equal(payload.system.buildSha, process.env.OMNIROUTE_BUILD_SHA ?? null);
   assert.equal(payload.providerSummary.catalogCount, 99);
   assert.equal(payload.providerSummary.configuredCount, 2);
   assert.equal(payload.providerSummary.activeCount, 1);
