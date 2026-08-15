@@ -116,10 +116,12 @@ ENV OMNIROUTE_MITM_STUB=1
 # (OMNIROUTE_MEMORY_MB). Override: `--build-arg OMNIROUTE_BUILD_MEMORY_MB=6144`.
 ARG OMNIROUTE_BUILD_MEMORY_MB=4096
 ENV NODE_OPTIONS="--max-old-space-size=${OMNIROUTE_BUILD_MEMORY_MB}"
+ARG OMNIROUTE_BUILD_SHA
 
 COPY . ./
 RUN --mount=type=cache,id=next-cache,target=/app/.build/next/cache \
-  mkdir -p /app/data && npm run build
+  mkdir -p /app/data && npm run build \
+  && OMNIROUTE_BUILD_SHA="$OMNIROUTE_BUILD_SHA" node scripts/build/write-build-sha.mjs
 
 # ── Runner base ────────────────────────────────────────────────────────────
 FROM base AS runner-base
